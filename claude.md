@@ -30,13 +30,13 @@ All source lives under `src/`. Solution file is `src/Verify.PDFium.slnx`.
 ### Library (`src/Verify.PDFium/`)
 
 Entry point is `VerifyPDFium.Initialize(dpi = 96)` which registers a stream converter for the `pdf` extension. The converter loads the document with `Morph.PDFium.PdfiumDocument` and returns a `ConversionResult` containing:
-1. `PdfInfo` (page count, page sizes in points, document information dictionary) serialized as the info file
+1. `PdfInfo` (page count, per-page size in points and extracted text, document information dictionary) serialized as the info file
 2. The original pdf bytes as a `pdf` target (`BypassComparersForSubsequentOnDifference` set, mirroring Verify.OpenXml)
 3. One `png` target per page, named `page_0001` style
 
 Key files:
 - **VerifyPDFium.cs** — initialization and the converter
-- **PdfInfo.cs** — info shape for the snapshot (uses `Morph.PDFium.PageSize`)
+- **PdfInfo.cs** / **PageInfo.cs** — info shape for the snapshot (per-page width/height in points and text via `PdfPage.GetText()`)
 
 Style note: only public types get a namespace declaration (`VerifyTests`); internal types live in the global namespace.
 

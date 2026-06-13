@@ -35,13 +35,6 @@ public static class VerifyPDFium
 
         using var document = PdfiumDocument.Load(bytes);
 
-        var info = new PdfInfo
-        {
-            PageCount = document.PageCount,
-            Pages = document.GetPageSizes(),
-            Properties = document.GetProperties()
-        };
-
         List<Target> targets =
         [
             new("pdf", new MemoryStream(bytes))
@@ -50,11 +43,28 @@ public static class VerifyPDFium
             }
         ];
 
+        var pages = new List<PageInfo>(document.PageCount);
         for (var index = 0; index < document.PageCount; index++)
         {
+            using var page = document.LoadPage(index);
+            var size = page.Size;
+            pages.Add(new()
+            {
+                Width = size.Width,
+                Height = size.Height,
+                Text = page.GetText()
+            });
+
             var png = document.RenderPage(index, dpi);
             targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
         }
+
+        var info = new PdfInfo
+        {
+            PageCount = document.PageCount,
+            Pages = pages,
+            Properties = document.GetProperties()
+        };
 
         return new(info, targets);
     }

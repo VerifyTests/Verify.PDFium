@@ -8,7 +8,7 @@ Extends [Verify](https://github.com/VerifyTests/Verify) to allow verification of
 
 Verifying a `pdf` produces:
 
- * A `.verified.txt` with the page count, page sizes (in PDF points), and document information dictionary entries (Title, Author, Producer, dates, etc).
+ * A `.verified.txt` with the page count, per-page size (in PDF points) and extracted text, and document information dictionary entries (Title, Author, Producer, dates, etc).
  * The pdf itself as `.verified.pdf`.
  * A PNG render of every page as `#page_0001.verified.png`, `#page_0002.verified.png`, etc.
 

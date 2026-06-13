@@ -3,7 +3,8 @@
   Pages: [
     {
       Width: 612.0,
-      Height: 792.0
+      Height: 792.0,
+      Text: Hello, World! This is a simple paragraph.
     }
   ],
   Properties: {
