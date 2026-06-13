@@ -80,3 +80,8 @@ public Task VerifyPdfStream()
 ```
 <sup><a href='/src/Tests/Samples.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-VerifyPdfStream' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+
+## Icon
+
+[PDF](https://thenounproject.com/icon/pdf-7564953//) designed by [Meilia](https://thenounproject.com/creator/meilia1/) from [The Noun Project](https://thenounproject.com).
