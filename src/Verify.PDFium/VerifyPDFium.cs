@@ -48,12 +48,13 @@ public static class VerifyPDFium
         {
             using var page = document.LoadPage(index);
             var size = page.Size;
-            pages.Add(new()
-            {
-                Width = size.Width,
-                Height = size.Height,
-                Text = page.GetText()
-            });
+            pages.Add(
+                new()
+                {
+                    Width = size.Width,
+                    Height = size.Height,
+                    Text = page.GetText()
+                });
 
             var png = document.RenderPage(index, dpi);
             targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
