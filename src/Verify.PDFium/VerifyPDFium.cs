@@ -33,39 +33,45 @@ public static class VerifyPDFium
         stream.CopyTo(buffer);
         var bytes = buffer.ToArray();
 
-        using var document = PdfiumDocument.Load(bytes);
+        List<Target> targets = [];
+        PdfInfo info;
+        using (var document = PdfiumDocument.Load(bytes))
+        {
+            var pageCount = document.PageCount;
+            var pages = new List<PageInfo>(pageCount);
+            for (var index = 0; index < pageCount; index++)
+            {
+                using var page = document.LoadPage(index);
+                var size = page.Size;
+                pages.Add(
+                    new()
+                    {
+                        Width = size.Width,
+                        Height = size.Height,
+                        Text = page.GetText()
+                    });
 
-        List<Target> targets =
-        [
+                var png = document.RenderPage(index, dpi);
+                targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
+            }
+
+            info = new()
+            {
+                PageCount = pageCount,
+                Pages = pages,
+                Properties = PdfNormalizer.NormalizeProperties(document.GetProperties())
+            };
+        }
+
+        // Neutralize the volatile fields for the pdf snapshot only once the document, which reads
+        // lazily from the same buffer, has been released.
+        PdfNormalizer.Normalize(bytes);
+        targets.Insert(
+            0,
             new("pdf", new MemoryStream(bytes))
             {
                 BypassComparersForSubsequentOnDifference = true
-            }
-        ];
-
-        var pages = new List<PageInfo>(document.PageCount);
-        for (var index = 0; index < document.PageCount; index++)
-        {
-            using var page = document.LoadPage(index);
-            var size = page.Size;
-            pages.Add(
-                new()
-                {
-                    Width = size.Width,
-                    Height = size.Height,
-                    Text = page.GetText()
-                });
-
-            var png = document.RenderPage(index, dpi);
-            targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
-        }
-
-        var info = new PdfInfo
-        {
-            PageCount = document.PageCount,
-            Pages = pages,
-            Properties = document.GetProperties()
-        };
+            });
 
         return new(info, targets);
     }
