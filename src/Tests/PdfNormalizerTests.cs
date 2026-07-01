@@ -1,6 +1,3 @@
-using System.Text;
-using Morph.PDFium;
-
 [TestFixture]
 public class PdfNormalizerTests
 {
