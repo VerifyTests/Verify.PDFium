@@ -38,7 +38,7 @@ static class PdfDate
     }
 
     // Parses a mandatory run of exactly length digits at start.
-    static bool TryFixed(ReadOnlySpan<char> span, int start, int length, out int value)
+    static bool TryFixed(CharSpan span, int start, int length, out int value)
     {
         value = 0;
         return span.Length >= start + length &&
@@ -46,14 +46,14 @@ static class PdfDate
     }
 
     // Parses an optional two-digit component; when the string ends before it, yields fallback.
-    static bool TryOptional(ReadOnlySpan<char> span, int start, int fallback, out int value)
+    static bool TryOptional(CharSpan span, int start, int fallback, out int value)
     {
         value = fallback;
         return span.Length <= start ||
                TryFixed(span, start, 2, out value);
     }
 
-    static bool TryOffset(ReadOnlySpan<char> span, int start, out TimeSpan offset)
+    static bool TryOffset(CharSpan span, int start, out TimeSpan offset)
     {
         offset = TimeSpan.Zero;
         if (span.Length <= start)
