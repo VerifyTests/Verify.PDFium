@@ -43,31 +43,31 @@ static class PdfNormalizer
         ZeroXmpElement(data, "<xmpMM:OriginalDocumentID"u8, Fill.All);
     }
 
-    public static void NormalizeProperties(Dictionary<string, string>? properties)
+    // Projects the raw string properties to an object map, parsing the dates to DateTimeOffset so
+    // Verify's built-in date scrubbing makes them deterministic. Non-dates stay as strings.
+    public static Dictionary<string, object>? NormalizeProperties(Dictionary<string, string>? properties)
     {
         if (properties is null)
         {
-            return;
+            return null;
         }
 
-        foreach (var key in properties.Keys.ToList())
+        var result = new Dictionary<string, object>(properties.Count);
+        foreach (var (key, value) in properties)
         {
-            if (key is "CreationDate" or "ModDate")
+            if (key is "CreationDate" or "ModDate" &&
+                PdfDate.TryParse(value, out var date))
             {
-                properties[key] = ZeroDigits(properties[key]);
+                result[key] = date;
+            }
+            else
+            {
+                result[key] = value;
             }
         }
+
+        return result;
     }
-
-    static string ZeroDigits(string value) =>
-        string.Create(value.Length, value, static (span, state) =>
-        {
-            for (var i = 0; i < state.Length; i++)
-            {
-                var c = state[i];
-                span[i] = char.IsAsciiDigit(c) ? '0' : c;
-            }
-        });
 
     // Finds a name key, then overwrites the string value that follows it. The value may be a
     // literal string "(...)" or a hex string "<...>".

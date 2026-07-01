@@ -49,6 +49,7 @@ public class PdfNormalizerTests
     public void NormalizedDocumentStillLoads()
     {
         var data = File.ReadAllBytes("sample.pdf");
+        PdfNormalizer.Normalize(data);
 
         using var document = PdfiumDocument.Load(data);
         Assert.That(document.PageCount, Is.EqualTo(1));
