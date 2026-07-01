@@ -23,10 +23,8 @@ static class PdfNormalizer
         All
     }
 
-    public static byte[] Normalize(byte[] source)
+    public static void Normalize(byte[] data)
     {
-        var data = (byte[]) source.Clone();
-
         // Document information dictionary dates.
         ZeroPdfString(data, "/CreationDate"u8, Fill.Digits);
         ZeroPdfString(data, "/ModDate"u8, Fill.Digits);
@@ -43,8 +41,6 @@ static class PdfNormalizer
         ZeroXmpElement(data, "<xmpMM:DocumentID"u8, Fill.All);
         ZeroXmpElement(data, "<xmpMM:InstanceID"u8, Fill.All);
         ZeroXmpElement(data, "<xmpMM:OriginalDocumentID"u8, Fill.All);
-
-        return data;
     }
 
     public static void NormalizeProperties(Dictionary<string, string>? properties)

@@ -33,16 +33,16 @@ public static class VerifyPDFium
         stream.CopyTo(buffer);
         var bytes = buffer.ToArray();
 
-        using var document = PdfiumDocument.Load(bytes);
-
+        PdfNormalizer.Normalize(bytes);
         List<Target> targets =
         [
-            new("pdf", new MemoryStream(PdfNormalizer.Normalize(bytes)))
+            new("pdf", new MemoryStream(bytes))
             {
                 BypassComparersForSubsequentOnDifference = true
             }
         ];
 
+        using var document = PdfiumDocument.Load(bytes);
         var pages = new List<PageInfo>(document.PageCount);
         for (var index = 0; index < document.PageCount; index++)
         {
