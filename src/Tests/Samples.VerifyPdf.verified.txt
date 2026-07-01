@@ -8,9 +8,9 @@
     }
   ],
   Properties: {
-    CreationDate: D:20000101000000+00'00',
+    CreationDate: D:00000000000000+00'00',
     Creator: Morph,
-    ModDate: D:20000101000000+00'00',
+    ModDate: D:00000000000000+00'00',
     Producer: PDFsharp 6.2.4
   }
 }

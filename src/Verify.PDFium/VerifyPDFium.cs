@@ -37,7 +37,7 @@ public static class VerifyPDFium
 
         List<Target> targets =
         [
-            new("pdf", new MemoryStream(bytes))
+            new("pdf", new MemoryStream(PdfNormalizer.Normalize(bytes)))
             {
                 BypassComparersForSubsequentOnDifference = true
             }
@@ -60,11 +60,14 @@ public static class VerifyPDFium
             targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
         }
 
+        var properties = document.GetProperties();
+        PdfNormalizer.NormalizeProperties(properties);
+
         var info = new PdfInfo
         {
             PageCount = document.PageCount,
             Pages = pages,
-            Properties = document.GetProperties()
+            Properties = properties
         };
 
         return new(info, targets);

@@ -31,11 +31,14 @@ All source lives under `src/`. Solution file is `src/Verify.PDFium.slnx`.
 
 Entry point is `VerifyPDFium.Initialize(dpi = 96)` which registers a stream converter for the `pdf` extension. The converter loads the document with `Morph.PDFium.PdfiumDocument` and returns a `ConversionResult` containing:
 1. `PdfInfo` (page count, per-page size in points and extracted text, document information dictionary) serialized as the info file
-2. The original pdf bytes as a `pdf` target (`BypassComparersForSubsequentOnDifference` set, mirroring Verify.OpenXml)
+2. The pdf bytes as a `pdf` target (`BypassComparersForSubsequentOnDifference` set, mirroring Verify.OpenXml)
 3. One `png` target per page, named `page_0001` style
+
+To keep snapshots stable for PDFs freshly generated at test time, the non-deterministic fields are neutralized before snapshotting: the trailer `/ID`, the info dictionary `/CreationDate`/`/ModDate` (both in the `pdf` bytes and the info file), and the XMP metadata dates plus `xmpMM:DocumentID`/`InstanceID`. This is done by **`PdfNormalizer`** — a length-preserving, in-place byte scan (no string round-trip, no regex) that overwrites only the volatile characters, so cross-reference offsets stay valid. Values inside a compressed object/metadata stream (`/ObjStm`, flate-compressed XMP) are not reachable by the plaintext scan.
 
 Key files:
 - **VerifyPDFium.cs** — initialization and the converter
+- **PdfNormalizer.cs** — neutralizes non-deterministic `/ID`, dates and XMP identifiers directly on the bytes
 - **PdfInfo.cs** / **PageInfo.cs** — info shape for the snapshot (per-page width/height in points and text via `PdfPage.GetText()`)
 
 Style note: only public types get a namespace declaration (`VerifyTests`); internal types live in the global namespace.
