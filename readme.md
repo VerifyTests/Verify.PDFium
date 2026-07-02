@@ -9,8 +9,10 @@ Extends [Verify](https://github.com/VerifyTests/Verify) to allow verification of
 Verifying a `pdf` produces:
 
  * A `.verified.txt` with the page count, per-page size (in PDF points) and extracted text, and document information dictionary entries (Title, Author, Producer, dates, etc).
- * The pdf itself as `.verified.pdf`.
+ * The pdf itself as `.verified.pdf`. This can be omitted with [`ExcludePdfDocument`](#exclude-the-pdf-document).
  * A PNG render of every page as `#page_0001.verified.png`, `#page_0002.verified.png`, etc.
+
+The non-deterministic fields of the pdf (the trailer `/ID`, the `/CreationDate` and `/ModDate`, and the equivalent XMP metadata) are neutralized so the same source document produces a byte-identical `.verified.pdf` across runs.
 
 Rendering is provided by [Morph.PDFium](https://github.com/Papyrine/Morph.PDFium), which wraps the prebuilt PDFium binaries from [pdfium-binaries](https://github.com/bblanchon/pdfium-binaries) (Windows, Linux, and macOS). Rendering is deterministic for a given Morph.PDFium version: the same input produces byte-identical PNGs on every machine and OS, and no image library dependency is added.
 
@@ -79,6 +81,22 @@ public Task VerifyPdfStream()
 }
 ```
 <sup><a href='/src/Tests/Samples.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-VerifyPdfStream' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+
+### Exclude the pdf document
+
+Some pdf producers embed non-deterministic bytes that cannot be neutralized. For example [Aspose.Cells](https://products.aspose.com/cells/) always embeds the machine's system fonts (it has no way to restrict font resolution to a bundled set), so the pdf bytes differ from one machine to the next even for the same input. `ExcludePdfDocument` drops the `.verified.pdf` from the snapshot for that verification, while still verifying the deterministic rendered pages and info file:
+
+<!-- snippet: ExcludePdfDocument -->
+<a id='snippet-ExcludePdfDocument'></a>
+```cs
+[Test]
+public Task ExcludePdfDocument() =>
+    VerifyFile("sample.pdf")
+        .ExcludePdfDocument();
+```
+<sup><a href='/src/Tests/Samples.cs#L27-L34' title='Snippet source file'>snippet source</a> | <a href='#snippet-ExcludePdfDocument' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
