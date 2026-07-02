@@ -4,6 +4,11 @@ public static class VerifyPDFium
 {
     static double dpi = 96;
 
+    // Context key set by ExcludePdfDocument. When present the raw pdf is left out of the snapshot,
+    // for producers (for example Aspose.Cells) that embed machine-specific system font bytes the
+    // pdf can never be made byte-deterministic. The rendered pages and info file still verify.
+    const string excludeDocumentKey = "VerifyPDFium.ExcludeDocument";
+
     public static bool Initialized { get; private set; }
 
     /// <param name="dpi">
@@ -24,10 +29,21 @@ public static class VerifyPDFium
         Initialized = true;
         VerifyPDFium.dpi = dpi;
 
-        VerifierSettings.RegisterStreamConverter("pdf", (_, target, _) => Convert(target));
+        VerifierSettings.RegisterStreamConverter("pdf", (_, target, context) => Convert(target, context));
     }
 
-    static ConversionResult Convert(Stream stream)
+    /// <summary>
+    /// Excludes the raw <c>.verified.pdf</c> from the snapshot for this verification, keeping only
+    /// the rendered pages and the info file. Use it when the pdf bytes cannot be made deterministic
+    /// (for example Aspose.Cells always embeds the machine's system fonts).
+    /// </summary>
+    public static SettingsTask ExcludePdfDocument(this SettingsTask settings)
+    {
+        settings.CurrentSettings.Context[excludeDocumentKey] = true;
+        return settings;
+    }
+
+    static ConversionResult Convert(Stream stream, IReadOnlyDictionary<string, object> context)
     {
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
@@ -63,16 +79,23 @@ public static class VerifyPDFium
             };
         }
 
-        // Neutralize the volatile fields for the pdf snapshot only once the document, which reads
-        // lazily from the same buffer, has been released.
-        PdfNormalizer.Normalize(bytes);
-        targets.Insert(
-            0,
-            new("pdf", new MemoryStream(bytes))
-            {
-                BypassComparersForSubsequentOnDifference = true
-            });
+        if (IncludeDocument(context))
+        {
+            // Neutralize the volatile fields for the pdf snapshot only once the document, which reads
+            // lazily from the same buffer, has been released.
+            PdfNormalizer.Normalize(bytes);
+            targets.Insert(
+                0,
+                new("pdf", new MemoryStream(bytes))
+                {
+                    BypassComparersForSubsequentOnDifference = true
+                });
+        }
 
         return new(info, targets);
     }
+
+    static bool IncludeDocument(IReadOnlyDictionary<string, object> context) =>
+        !context.TryGetValue(excludeDocumentKey, out var value) ||
+        value is not true;
 }
