@@ -1,3 +1,1 @@
-﻿// Global using directives
-
-global using Morph.PDFium;
+﻿global using Morph.PDFium;
