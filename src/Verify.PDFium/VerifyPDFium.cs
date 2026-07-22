@@ -75,7 +75,7 @@ public static class VerifyPDFium
             {
                 PageCount = pageCount,
                 Pages = pages,
-                Properties = PdfNormalizer.NormalizeProperties(document.GetProperties())
+                Properties = PdfProperties.Normalize(document.GetProperties())
             };
         }
 
@@ -83,7 +83,7 @@ public static class VerifyPDFium
         {
             // Neutralize the volatile fields for the pdf snapshot only once the document, which reads
             // lazily from the same buffer, has been released.
-            PdfNormalizer.Normalize(bytes);
+            bytes = PdfNormalizer.Normalize(bytes);
             targets.Insert(
                 0,
                 new("pdf", new MemoryStream(bytes))
