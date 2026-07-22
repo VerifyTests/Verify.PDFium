@@ -1,5 +1,3 @@
-using System.Text;
-
 // The neutralizing algorithm itself is owned and tested by the DeterministicPdf package. What is
 // worth asserting here is the wiring: that this package applies it, and that a normalized document
 // is still loadable by pdfium.
