@@ -12,7 +12,7 @@ Verifying a `pdf` produces:
  * The pdf itself as `.verified.pdf`. This can be omitted with [`ExcludePdfDocument`](#exclude-the-pdf-document).
  * A PNG render of every page as `#page_0001.verified.png`, `#page_0002.verified.png`, etc.
 
-The non-deterministic fields of the pdf (the trailer `/ID`, the `/CreationDate` and `/ModDate`, and the equivalent XMP metadata) are neutralized so the same source document produces a byte-identical `.verified.pdf` across runs.
+The non-deterministic fields of the pdf (the trailer `/ID`, the `/CreationDate` and `/ModDate`, and the equivalent XMP metadata) are neutralized so the same source document produces a byte-identical `.verified.pdf` across runs. A producer that already emits deterministic bytes can skip that work with [`SkipPdfNormalization`](#skip-pdf-normalization).
 
 Rendering is provided by [Morph.PDFium](https://github.com/Papyrine/Morph.PDFium), which wraps the prebuilt PDFium binaries from [pdfium-binaries](https://github.com/bblanchon/pdfium-binaries) (Windows, Linux, and macOS). Rendering is deterministic for a given Morph.PDFium version: the same input produces byte-identical PNGs on every machine and OS, and no image library dependency is added.
 
@@ -98,6 +98,26 @@ public Task ExcludePdfDocument() =>
 ```
 <sup><a href='/src/Tests/Samples.cs#L27-L34' title='Snippet source file'>snippet source</a> | <a href='#snippet-ExcludePdfDocument' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+
+### Skip pdf normalization
+
+By default the pdf bytes are normalized before being snapshotted: the trailer `/ID`, the `/CreationDate` and `/ModDate`, and the XMP dates and identifiers are neutralized, and the XMP packet is canonicalized. A producer that already emits byte-deterministic documents gains nothing from that, and pays for a full buffer copy, a rescan, and — when the XMP is canonicalized — a rebuild plus a cross-reference repair. `SkipPdfNormalization` snapshots the bytes exactly as produced:
+
+<!-- snippet: SkipPdfNormalization -->
+<a id='snippet-SkipPdfNormalization'></a>
+```cs
+[Test]
+public Task SkipPdfNormalization() =>
+    VerifyFile("sample.pdf")
+        .SkipPdfNormalization();
+```
+<sup><a href='/src/Tests/Samples.cs#L36-L43' title='Snippet source file'>snippet source</a> | <a href='#snippet-SkipPdfNormalization' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Only skip it when the producer is genuinely deterministic. Without normalization a freshly generated pdf carries a wall-clock `/CreationDate` and a fresh `/ID`, so the snapshot differs on every run.
+
+The XMP canonicalization is worth calling out, because it is the pass that changes bytes even for an already-deterministic producer: it collapses the packet's whitespace. Turning this setting on for an existing suite therefore shifts every stored `.verified.pdf` once, without anything about the documents having changed.
 
 
 ## Icon
