@@ -1,7 +1,7 @@
 # <img src="/src/icon.png" height="30px"> Verify.PDFium
 
 [![Discussions](https://img.shields.io/badge/Verify-Discussions-yellow?svg=true&label=)](https://github.com/orgs/VerifyTests/discussions)
-[![Build status](https://img.shields.io/appveyor/build/SimonCropp/verify-pdfium)](https://ci.appveyor.com/project/SimonCropp/verify-pdfium)
+[![Build status](https://github.com/VerifyTests/Verify.PDFium/actions/workflows/build.yml/badge.svg)](https://github.com/VerifyTests/Verify.PDFium/actions/workflows/build.yml)
 [![NuGet Status](https://img.shields.io/nuget/v/Verify.PDFium.svg)](https://www.nuget.org/packages/Verify.PDFium/)
 
 Extends [Verify](https://github.com/VerifyTests/Verify) to allow verification of PDF documents via [PDFium](https://pdfium.googlesource.com/pdfium/).<!-- singleLineInclude: intro. path: /docs/intro.include.md -->
