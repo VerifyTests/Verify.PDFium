@@ -64,7 +64,7 @@ public static void Initialize() =>
 public Task VerifyPdf() =>
     VerifyFile("sample.pdf");
 ```
-<sup><a href='/src/Tests/Samples.cs#L4-L10' title='Snippet source file'>snippet source</a> | <a href='#snippet-VerifyPdf' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Tests/Samples.cs#L3-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-VerifyPdf' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
@@ -80,7 +80,7 @@ public Task VerifyPdfStream()
     return Verify(stream, "pdf");
 }
 ```
-<sup><a href='/src/Tests/Samples.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-VerifyPdfStream' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Tests/Samples.cs#L11-L20' title='Snippet source file'>snippet source</a> | <a href='#snippet-VerifyPdfStream' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
@@ -96,7 +96,7 @@ public Task ExcludePdfDocument() =>
     VerifyFile("sample.pdf")
         .ExcludePdfDocument();
 ```
-<sup><a href='/src/Tests/Samples.cs#L27-L34' title='Snippet source file'>snippet source</a> | <a href='#snippet-ExcludePdfDocument' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Tests/Samples.cs#L26-L33' title='Snippet source file'>snippet source</a> | <a href='#snippet-ExcludePdfDocument' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
@@ -112,7 +112,7 @@ public Task SkipPdfNormalization() =>
     VerifyFile("sample.pdf")
         .SkipPdfNormalization();
 ```
-<sup><a href='/src/Tests/Samples.cs#L36-L43' title='Snippet source file'>snippet source</a> | <a href='#snippet-SkipPdfNormalization' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Tests/Samples.cs#L35-L42' title='Snippet source file'>snippet source</a> | <a href='#snippet-SkipPdfNormalization' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Only skip it when the producer is genuinely deterministic. Without normalization a freshly generated pdf carries a wall-clock `/CreationDate` and a fresh `/ID`, so the snapshot differs on every run.

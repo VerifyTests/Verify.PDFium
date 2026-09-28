@@ -1,37 +1,36 @@
 // The neutralizing algorithm itself is owned and tested by the DeterministicPdf package. What is
 // worth asserting here is the wiring: that this package applies it, and that a normalized document
 // is still loadable by pdfium.
-[TestFixture]
 public class PdfNormalizerTests
 {
     [Test]
-    public void NormalizedDocumentStillLoads()
+    public async Task NormalizedDocumentStillLoads()
     {
         var data = PdfNormalizer.Normalize(File.ReadAllBytes("sample.pdf"));
 
         using var document = PdfiumDocument.Load(data);
-        Assert.That(document.PageCount, Is.EqualTo(1));
+        await Assert.That(document.PageCount).IsEqualTo(1);
     }
 
     [Test]
-    public void NeutralizesVolatileValues()
+    public async Task NeutralizesVolatileValues()
     {
         var data = PdfNormalizer.Normalize(File.ReadAllBytes("sample.pdf"));
 
         var text = Encoding.Latin1.GetString(data);
-        Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(text, Does.Not.Match(@"/CreationDate\s*\(D:[1-9]"));
-            Assert.That(text, Does.Not.Match(@"/ModDate\s*\(D:[1-9]"));
-        });
+            await Assert.That(text).DoesNotMatch(@"/CreationDate\s*\(D:[1-9]");
+            await Assert.That(text).DoesNotMatch(@"/ModDate\s*\(D:[1-9]");
+        }
     }
 
     [Test]
-    public void IsIdempotent()
+    public async Task IsIdempotent()
     {
         var once = PdfNormalizer.Normalize(File.ReadAllBytes("sample.pdf"));
         var twice = PdfNormalizer.Normalize(once);
 
-        Assert.That(twice, Is.EqualTo(once));
+        await Assert.That(twice).IsEquivalentTo(once);
     }
 }
