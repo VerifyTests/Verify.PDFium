@@ -29,10 +29,12 @@ All source lives under `src/`. Solution file is `src/Verify.PDFium.slnx`.
 
 ### Library (`src/Verify.PDFium/`)
 
-Entry point is `VerifyPDFium.Initialize(dpi = 96)` which registers a stream converter for the `pdf` extension. The converter loads the document with `Morph.PDFium.PdfiumDocument` and returns a `ConversionResult` containing:
+Entry point is `VerifyPDFium.Initialize(dpi = 96, outputs = PdfiumOutputs.All)` which registers a stream converter for the `pdf` extension. The converter loads the document with `Morph.PDFium.PdfiumDocument` and returns a `ConversionResult` containing:
 1. `PdfInfo` (page count, per-page size in points and extracted text, document information dictionary) serialized as the info file
 2. The pdf bytes as a `pdf` target (`BypassComparersForSubsequentOnDifference` set, mirroring Verify.OpenXml)
 3. One `png` target per page, named `page_0001` style
+
+`PdfiumOutputs` (`[Flags]`: `Png`, `Text`, `All`) is a global option: without `Png` pages are not rendered, without `Text` page text is not extracted (`PageInfo.Text` stays null and is omitted from the info file). The pdf target is not governed by it. Since it is global, it is tested in a separate project, `src/StaticSettingsTests/` (Png only).
 
 To keep snapshots stable for PDFs freshly generated at test time, the non-deterministic fields are neutralized two ways:
 - **In the `pdf` bytes** (`DeterministicPdf.PdfNormalizer.Normalize`): the trailer `/ID`, the info-dictionary `/CreationDate`/`/ModDate`, and the XMP dates plus `xmpMM:DocumentID`/`InstanceID`/`OriginalDocumentID` and `dc:date` are overwritten by an in-place byte scan (no string round-trip, no regex). That value-zeroing is length-preserving, so cross-reference offsets survive it. A final `CanonicalizeXmp` pass then collapses the XMP packet's whitespace — Apache FOP serializes the packet through the platform's XML writer, so indentation varies by JRE — and that pass is **not** length-preserving: it rebuilds the buffer and repairs both the metadata stream length and the classic cross-reference table. A document it cannot safely rewrite (cross-reference stream, incremental update, unlocatable stream length) comes back unchanged. `Normalize` copies its input, so a caller keeps ownership of the array passed in; the call is still made only after the `PdfiumDocument` (which reads lazily from the same buffer) is disposed. Values compressed away inside an `/ObjStm` or a flate-compressed XMP packet are not reachable by the plaintext scan and are left alone.

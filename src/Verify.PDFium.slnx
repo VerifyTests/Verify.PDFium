@@ -11,4 +11,5 @@
   </Folder>
   <Project Path="Verify.PDFium/Verify.PDFium.csproj" />
   <Project Path="Tests/Tests.csproj" />
+  <Project Path="StaticSettingsTests/StaticSettingsTests.csproj" />
 </Solution>

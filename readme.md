@@ -55,6 +55,27 @@ public static void Initialize() =>
 `Initialize` optionally takes the render resolution: `VerifyPDFium.Initialize(dpi: 150)`. The default 96 dpi renders an A4 page at 794 x 1123.
 
 
+### Outputs
+
+`Initialize` optionally takes a `PdfiumOutputs` flags enum controlling which outputs each pdf is split into:
+
+ * `Png`: a rendered png per page.
+ * `Text`: the extracted text of each page in the info file.
+ * `All`: both. The default.
+
+Omitted outputs are not produced at all (pages are not rendered, text is not extracted), so this also saves work. The pdf document itself is not controlled by this option; use `VerifierSettings.ExcludeTargets("pdf")` for that.
+
+<!-- snippet: InitializeOutputs -->
+<a id='snippet-InitializeOutputs'></a>
+```cs
+[ModuleInitializer]
+public static void Initialize() =>
+    VerifyPDFium.Initialize(outputs: PdfiumOutputs.Png);
+```
+<sup><a href='/src/StaticSettingsTests/ModuleInitializer.cs#L3-L9' title='Snippet source file'>snippet source</a> | <a href='#snippet-InitializeOutputs' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+
 ### Verify a file
 
 <!-- snippet: VerifyPdf -->
