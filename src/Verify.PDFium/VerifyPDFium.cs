@@ -3,6 +3,7 @@ namespace VerifyTests;
 public static class VerifyPDFium
 {
     static double dpi = 96;
+    static PdfiumOutputs outputs = PdfiumOutputs.All;
 
     // Context key set by ExcludePdfDocument. When present the raw pdf is left out of the snapshot,
     // for producers (for example Aspose.Cells) that embed machine-specific system font bytes the
@@ -18,7 +19,11 @@ public static class VerifyPDFium
     /// <param name="dpi">
     /// Render resolution for the page images. The default 96 renders an A4 page at 794 x 1123.
     /// </param>
-    public static void Initialize(double dpi = 96)
+    /// <param name="outputs">
+    /// Which outputs each pdf is split into. Omitted outputs are not produced (pages are not rendered
+    /// and text is not extracted). Defaults to <see cref="PdfiumOutputs.All"/>.
+    /// </param>
+    public static void Initialize(double dpi = 96, PdfiumOutputs outputs = PdfiumOutputs.All)
     {
         if (Initialized)
         {
@@ -32,6 +37,7 @@ public static class VerifyPDFium
 
         Initialized = true;
         VerifyPDFium.dpi = dpi;
+        VerifyPDFium.outputs = outputs;
 
         VerifierSettings.RegisterStreamConverter("pdf", (_, target, context) => Convert(target, context));
     }
@@ -78,6 +84,8 @@ public static class VerifyPDFium
         var bytes = buffer.ToArray();
 
         List<Target> targets = [];
+        var includePng = outputs.HasFlag(PdfiumOutputs.Png);
+        var includeText = outputs.HasFlag(PdfiumOutputs.Text);
         PdfInfo info;
         using (var document = PdfiumDocument.Load(bytes))
         {
@@ -92,11 +100,14 @@ public static class VerifyPDFium
                     {
                         Width = size.Width,
                         Height = size.Height,
-                        Text = page.GetText()
+                        Text = includeText ? page.GetText() : null
                     });
 
-                var png = document.RenderPage(index, dpi);
-                targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
+                if (includePng)
+                {
+                    var png = document.RenderPage(index, dpi);
+                    targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
+                }
             }
 
             info = new()
