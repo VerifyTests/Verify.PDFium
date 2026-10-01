@@ -7,6 +7,9 @@ namespace VerifyTests;
 [Flags]
 public enum PdfiumOutputs
 {
+    /// <summary>No outputs. Only the source document and info are emitted.</summary>
+    None = 0,
+
     /// <summary>A rendered png per page. When omitted pages are not rendered.</summary>
     Png = 1,
 
