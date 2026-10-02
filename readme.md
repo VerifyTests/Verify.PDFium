@@ -61,6 +61,7 @@ public static void Initialize() =>
 
  * `Png`: a rendered png per page.
  * `Text`: the extracted text of each page in the info file.
+ * `None`: none of the above. Only the info and the source document are emitted.
  * `All`: both. The default.
 
 Omitted outputs are not produced at all (pages are not rendered, text is not extracted), so this also saves work. The pdf document itself is not controlled by this option; use `VerifierSettings.ExcludeTargets("pdf")` for that.
