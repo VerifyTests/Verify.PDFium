@@ -14,6 +14,7 @@
     <PackageReference Include="Verify" />
     <ProjectReference Include="..\Verify.PDFium\Verify.PDFium.csproj" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="ProjectFiles" PrivateAssets="all" />
 
     <None Update="*.pdf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

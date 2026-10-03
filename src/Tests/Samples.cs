@@ -21,7 +21,7 @@ public class Samples
 
     [Test]
     public Task MultiPage() =>
-        VerifyFile("multi-page.pdf");
+        VerifyFile(ProjectFiles.multi_page_pdf.Path);
 
     #region ExcludePdfDocument
 

@@ -2,5 +2,5 @@ public class OutputsTests
 {
     [Test]
     public Task PngOnly() =>
-        VerifyFile("sample.pdf");
+        VerifyFile(ProjectFiles.sample_pdf.Path);
 }
