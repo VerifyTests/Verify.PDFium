@@ -3,12 +3,6 @@ namespace VerifyTests;
 public static class VerifyPDFium
 {
     static double dpi = 96;
-    static PdfiumOutputs outputs = PdfiumOutputs.All;
-
-    // Context key set by ExcludePdfDocument. When present the raw pdf is left out of the snapshot,
-    // for producers (for example Aspose.Cells) that embed machine-specific system font bytes the
-    // pdf can never be made byte-deterministic. The rendered pages and info file still verify.
-    const string excludeDocumentKey = "VerifyPDFium.ExcludeDocument";
 
     // Context key set by SkipPdfNormalization. When present the pdf bytes are snapshotted as
     // produced, for producers that already emit byte-deterministic documents.
@@ -19,11 +13,7 @@ public static class VerifyPDFium
     /// <param name="dpi">
     /// Render resolution for the page images. The default 96 renders an A4 page at 794 x 1123.
     /// </param>
-    /// <param name="outputs">
-    /// Which outputs each pdf is split into. Omitted outputs are not produced (pages are not rendered
-    /// and text is not extracted). Defaults to <see cref="PdfiumOutputs.All"/>.
-    /// </param>
-    public static void Initialize(double dpi = 96, PdfiumOutputs outputs = PdfiumOutputs.All)
+    public static void Initialize(double dpi = 96)
     {
         if (Initialized)
         {
@@ -37,20 +27,8 @@ public static class VerifyPDFium
 
         Initialized = true;
         VerifyPDFium.dpi = dpi;
-        VerifyPDFium.outputs = outputs;
 
         VerifierSettings.RegisterStreamConverter("pdf", (_, target, context) => Convert(target, context));
-    }
-
-    /// <summary>
-    /// Excludes the raw <c>.verified.pdf</c> from the snapshot for this verification, keeping only
-    /// the rendered pages and the info file. Use it when the pdf bytes cannot be made deterministic
-    /// (for example Aspose.Cells always embeds the machine's system fonts).
-    /// </summary>
-    public static SettingsTask ExcludePdfDocument(this SettingsTask settings)
-    {
-        settings.CurrentSettings.Context[excludeDocumentKey] = true;
-        return settings;
     }
 
     /// <summary>
@@ -83,42 +61,45 @@ public static class VerifyPDFium
         stream.CopyTo(buffer);
         var bytes = buffer.ToArray();
 
-        List<Target> targets = [];
-        var includePng = outputs.HasFlag(PdfiumOutputs.Png);
-        var includeText = outputs.HasFlag(PdfiumOutputs.Text);
-        PdfInfo info;
+        // Names the pages, places their text, and says which pages and which of their outputs the
+        // verification wants, so a page that is not wanted is neither rendered nor read
+        var conversion = new PagedConversion(context);
+        var includeImages = conversion.IncludeImages;
+        var includeText = conversion.IncludeText;
         using (var document = PdfiumDocument.Load(bytes))
         {
-            var pageCount = document.PageCount;
-            var pages = new List<PageInfo>(pageCount);
-            for (var index = 0; index < pageCount; index++)
+            conversion.Info = PdfProperties.Normalize(document.GetProperties());
+            foreach (var number in conversion.Pages(document.PageCount))
             {
+                var index = number - 1;
                 using var page = document.LoadPage(index);
                 var size = page.Size;
-                pages.Add(
-                    new()
+
+                Stream? image = null;
+                if (includeImages)
+                {
+                    image = new MemoryStream(document.RenderPage(index, dpi));
+                }
+
+                string? text = null;
+                if (includeText)
+                {
+                    text = page.GetText();
+                }
+
+                conversion.AddPage(
+                    number,
+                    image,
+                    text,
+                    new PageSize
                     {
                         Width = size.Width,
-                        Height = size.Height,
-                        Text = includeText ? page.GetText() : null
+                        Height = size.Height
                     });
-
-                if (includePng)
-                {
-                    var png = document.RenderPage(index, dpi);
-                    targets.Add(new("png", new MemoryStream(png), $"page_{index + 1:0000}"));
-                }
             }
-
-            info = new()
-            {
-                PageCount = pageCount,
-                Pages = pages,
-                Properties = PdfProperties.Normalize(document.GetProperties())
-            };
         }
 
-        if (IncludeDocument(context))
+        if (!context.IsTargetExcluded("pdf"))
         {
             if (Normalize(context))
             {
@@ -127,20 +108,11 @@ public static class VerifyPDFium
                 bytes = PdfNormalizer.Normalize(bytes);
             }
 
-            targets.Insert(
-                0,
-                new("pdf", new MemoryStream(bytes))
-                {
-                    BypassComparersForSubsequentOnDifference = true
-                });
+            conversion.Source(new("pdf", new MemoryStream(bytes)));
         }
 
-        return new(info, targets);
+        return conversion.Build();
     }
-
-    static bool IncludeDocument(IReadOnlyDictionary<string, object> context) =>
-        !context.TryGetValue(excludeDocumentKey, out var value) ||
-        value is not true;
 
     static bool Normalize(IReadOnlyDictionary<string, object> context) =>
         !context.TryGetValue(skipNormalizationKey, out var value) ||

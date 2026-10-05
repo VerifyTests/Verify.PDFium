@@ -29,26 +29,26 @@ All source lives under `src/`. Solution file is `src/Verify.PDFium.slnx`.
 
 ### Library (`src/Verify.PDFium/`)
 
-Entry point is `VerifyPDFium.Initialize(dpi = 96, outputs = PdfiumOutputs.All)` which registers a stream converter for the `pdf` extension. The converter loads the document with `Morph.PDFium.PdfiumDocument` and returns a `ConversionResult` containing:
-1. `PdfInfo` (page count, per-page size in points and extracted text, document information dictionary) serialized as the info file
-2. The pdf bytes as a `pdf` target (`BypassComparersForSubsequentOnDifference` set, mirroring Verify.OpenXml)
-3. One `png` target per page, named `page_0001` style
+Entry point is `VerifyPDFium.Initialize(dpi = 96)` which registers a stream converter for the `pdf` extension. The converter loads the document with `Morph.PDFium.PdfiumDocument` and builds its `ConversionResult` with Verify's `PagedConversion`:
+1. The document information dictionary as `Info`, and each page added with its size in points (`PageSize`), its extracted text and its png
+2. The pdf bytes as the `Source`, which is what ties the pages and the info file to the pdf for comparison and for the diff tool
+3. `PagedConversion` names the pages (`page_0001`), places the text, and writes the info file in the shape every paged document has
 
-`PdfiumOutputs` (`[Flags]`: `Png`, `Text`, `All`) is a global option: without `Png` pages are not rendered, without `Text` page text is not extracted (`PageInfo.Text` stays null and is omitted from the info file). The pdf target is not governed by it. Since it is global, it is tested in a separate project, `src/StaticSettingsTests/` (Png only).
+What is produced is decided by Verify's settings, read through `PagedConversion`, not by an option of this plugin: `PageText` (in the info, a file per page, or none), `PagesToInclude`, `ExcludeDerivedTargets("png")` and `ExcludeTargets("pdf")`. The converter asks `IncludeImages`, `IncludeText` and `Pages` before rendering or reading, so nothing left out is produced. The global forms of those settings are tested in a separate project, `src/StaticSettingsTests/` (no text).
 
 To keep snapshots stable for PDFs freshly generated at test time, the non-deterministic fields are neutralized two ways:
 - **In the `pdf` bytes** (`DeterministicPdf.PdfNormalizer.Normalize`): the trailer `/ID`, the info-dictionary `/CreationDate`/`/ModDate`, and the XMP dates plus `xmpMM:DocumentID`/`InstanceID`/`OriginalDocumentID` and `dc:date` are overwritten by an in-place byte scan (no string round-trip, no regex). That value-zeroing is length-preserving, so cross-reference offsets survive it. A final `CanonicalizeXmp` pass then collapses the XMP packet's whitespace — Apache FOP serializes the packet through the platform's XML writer, so indentation varies by JRE — and that pass is **not** length-preserving: it rebuilds the buffer and repairs both the metadata stream length and the classic cross-reference table. A document it cannot safely rewrite (cross-reference stream, incremental update, unlocatable stream length) comes back unchanged. `Normalize` copies its input, so a caller keeps ownership of the array passed in; the call is still made only after the `PdfiumDocument` (which reads lazily from the same buffer) is disposed. Values compressed away inside an `/ObjStm` or a flate-compressed XMP packet are not reachable by the plaintext scan and are left alone.
 - **In the info file** (`PdfProperties.Normalize`): `Properties` is a `Dictionary<string, object>` whose `CreationDate`/`ModDate` values are parsed (`PdfDate`) into `DateTimeOffset`, so Verify's built-in date scrubbing renders them deterministically (`DateTimeOffset_1` etc.). Properties are read from the original bytes, before the byte-level pass zeroes them.
 
-Both can be opted out of per verification, via a context key set by a `SettingsTask` extension and read in `Convert`:
-- `ExcludePdfDocument` — drops the `.verified.pdf` entirely, for producers whose bytes can never be made deterministic (Aspose.Cells embeds the machine's system fonts).
-- `SkipPdfNormalization` — keeps the `.verified.pdf` but snapshots the producer's own bytes, for producers that are already byte-deterministic. Worth knowing when changing this: `CanonicalizeXmp` is the pass that alters bytes even for such a producer, so toggling the setting on an existing suite shifts every stored `.verified.pdf` once.
+Both can be opted out of per verification:
+- `ExcludeTargets("pdf")`, Verify's own setting — drops the `.verified.pdf` entirely, for producers whose bytes can never be made deterministic (Aspose.Cells embeds the machine's system fonts). `Convert` checks `context.IsTargetExcluded("pdf")` and skips the normalization with it.
+- `SkipPdfNormalization` — keeps the `.verified.pdf` but snapshots the producer's own bytes, for producers that are already byte-deterministic. A context key set by a `SettingsTask` extension and read in `Convert`. Worth knowing when changing this: `CanonicalizeXmp` is the pass that alters bytes even for such a producer, so toggling the setting on an existing suite shifts every stored `.verified.pdf` once.
 
 Key files:
-- **VerifyPDFium.cs** — initialization, the converter, and the two opt-out extensions
+- **VerifyPDFium.cs** — initialization, the converter, and the `SkipPdfNormalization` extension
 - **PdfProperties.cs** — projects the pdfium-reported property map to the scrubbable object map
 - **PdfDate.cs** — parses PDF date strings (`D:YYYYMMDD…`) to `DateTimeOffset`
-- **PdfInfo.cs** / **PageInfo.cs** — info shape for the snapshot (per-page width/height in points and text via `PdfPage.GetText()`)
+- **PageSize.cs** — a page's width and height in points, its `Info` in the info file. The rest of that file's shape is Verify's
 
 The byte-level normalizer is **not** a type in this repo — it is `PdfNormalizer` from the [DeterministicPdf](https://github.com/SimonCropp/DeterministicPdf) package, which owns and tests the algorithm.
 
