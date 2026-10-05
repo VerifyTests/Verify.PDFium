@@ -28,7 +28,35 @@ public class Samples
     [Test]
     public Task ExcludePdfDocument() =>
         VerifyFile("sample.pdf")
-            .ExcludePdfDocument();
+            .ExcludeTargets("pdf");
+
+    #endregion
+
+    #region PageTextPerPage
+
+    [Test]
+    public Task PageTextPerPage() =>
+        VerifyFile("sample.pdf")
+            .PageText(PageTextPlacement.PerPage);
+
+    #endregion
+
+    #region PagesToInclude
+
+    [Test]
+    public Task PagesToInclude() =>
+        VerifyFile(ProjectFiles.multi_page_pdf.Path)
+            .PagesToInclude(2)
+            .ExcludeDerivedTargets("png");
+
+    #endregion
+
+    #region TextOnly
+
+    [Test]
+    public Task TextOnly() =>
+        VerifyFile("sample.pdf")
+            .ExcludeDerivedTargets("png");
 
     #endregion
 
