@@ -6,7 +6,7 @@ public class PdfNormalizerTests
     [Test]
     public async Task NormalizedDocumentStillLoads()
     {
-        var data = PdfNormalizer.Normalize(File.ReadAllBytes(ProjectFiles.sample_pdf));
+        var data = PdfNormalizer.Normalize(await File.ReadAllBytesAsync(ProjectFiles.sample_pdf));
 
         using var document = PdfiumDocument.Load(data);
         await Assert.That(document.PageCount).IsEqualTo(1);
@@ -15,7 +15,7 @@ public class PdfNormalizerTests
     [Test]
     public async Task NeutralizesVolatileValues()
     {
-        var data = PdfNormalizer.Normalize(File.ReadAllBytes(ProjectFiles.sample_pdf));
+        var data = PdfNormalizer.Normalize(await File.ReadAllBytesAsync(ProjectFiles.sample_pdf));
 
         var text = Encoding.Latin1.GetString(data);
         using (Assert.Multiple())
@@ -28,7 +28,7 @@ public class PdfNormalizerTests
     [Test]
     public async Task IsIdempotent()
     {
-        var once = PdfNormalizer.Normalize(File.ReadAllBytes(ProjectFiles.sample_pdf));
+        var once = PdfNormalizer.Normalize(await File.ReadAllBytesAsync(ProjectFiles.sample_pdf));
         var twice = PdfNormalizer.Normalize(once);
 
         await Assert.That(twice).IsEquivalentTo(once);

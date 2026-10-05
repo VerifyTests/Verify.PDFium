@@ -8,7 +8,7 @@ public class SkipPdfNormalizationTests
     {
         // The premise the two tests below rest on. If sample.pdf were already byte-identical to its
         // normalized form they would both pass while asserting nothing.
-        var raw = File.ReadAllBytes(ProjectFiles.sample_pdf);
+        var raw = await File.ReadAllBytesAsync(ProjectFiles.sample_pdf);
 
         await Assert.That(PdfNormalizer.Normalize(raw)).IsNotEquivalentTo(raw);
     }
