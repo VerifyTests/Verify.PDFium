@@ -68,4 +68,13 @@ public class Samples
             .SkipPdfNormalization();
 
     #endregion
+
+    #region StripPdfEmbeddedFonts
+
+    [Test]
+    public Task StripPdfEmbeddedFonts() =>
+        VerifyFile("sample.pdf")
+            .StripPdfEmbeddedFonts();
+
+    #endregion
 }

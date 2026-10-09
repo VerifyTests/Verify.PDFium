@@ -150,7 +150,7 @@ public Task VerifyPdfStream()
 
 ### Exclude the pdf document
 
-Some pdf producers embed non-deterministic bytes that cannot be neutralized. For example [Aspose.Cells](https://products.aspose.com/cells/) always embeds the machine's system fonts (it has no way to restrict font resolution to a bundled set), so the pdf bytes differ from one machine to the next even for the same input. Verify's `ExcludeTargets("pdf")` drops the `.verified.pdf` from the snapshot for that verification, while still verifying the deterministic rendered pages and info file. `VerifierSettings.ExcludeTargets("pdf")` does the same for every test:
+Some pdf producers embed non-deterministic bytes that cannot be neutralized. Where the only such bytes are the machine's fonts, [`StripPdfEmbeddedFonts`](#strip-embedded-fonts) keeps the `.verified.pdf`; otherwise it can be dropped. Verify's `ExcludeTargets("pdf")` drops the `.verified.pdf` from the snapshot for that verification, while still verifying the deterministic rendered pages and info file. `VerifierSettings.ExcludeTargets("pdf")` does the same for every test:
 
 <!-- snippet: ExcludePdfDocument -->
 <a id='snippet-ExcludePdfDocument'></a>
@@ -182,6 +182,30 @@ public Task SkipPdfNormalization() =>
 Only skip it when the producer is genuinely deterministic. Without normalization a freshly generated pdf carries a wall-clock `/CreationDate` and a fresh `/ID`, so the snapshot differs on every run.
 
 The XMP canonicalization is worth calling out, because it is the pass that changes bytes even for an already-deterministic producer: it collapses the packet's whitespace. Turning this setting on for an existing suite therefore shifts every stored `.verified.pdf` once, without anything about the documents having changed.
+
+
+### Strip embedded fonts
+
+Some producers embed a subset of whichever copy of a font the machine has installed. [Aspose.Cells](https://products.aspose.com/cells/), for example, always embeds the machine's system fonts (it has no way to restrict font resolution to a bundled set). A developer machine and a build agent with different versions of one font then produce different pdf bytes for the same input, even though both render identically. `StripPdfEmbeddedFonts` removes the font programs from the snapshotted pdf, leaving each font named but not embedded:
+
+<!-- snippet: StripPdfEmbeddedFonts -->
+<a id='snippet-StripPdfEmbeddedFonts'></a>
+```cs
+[Test]
+public Task StripPdfEmbeddedFonts() =>
+    VerifyFile("sample.pdf")
+        .StripPdfEmbeddedFonts();
+```
+<sup><a href='/src/Tests/Samples.cs#L72-L79' title='Snippet source file'>snippet source</a> | <a href='#snippet-StripPdfEmbeddedFonts' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+`VerifyPDFium.Initialize(stripEmbeddedFonts: true)` does the same for every test.
+
+Only the `.verified.pdf` is affected. The pages are rendered, and the text read, from the document as it was produced, so they are still drawn with its fonts.
+
+The stored pdf is no longer a faithful copy of the document: a viewer opening it substitutes fonts of its own. Turning this on for an existing suite changes every stored `.verified.pdf` that embeds a font, once.
+
+It is part of the normalization, so it does nothing alongside [`SkipPdfNormalization`](#skip-pdf-normalization). A document the normalizer cannot safely rewrite (for example an incrementally updated one) keeps its fonts; see [DeterministicPdf](https://github.com/SimonCropp/DeterministicPdf#stripping-embedded-fonts).
 
 
 ## Reviewing changes
