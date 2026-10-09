@@ -4,7 +4,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="DeterministicPdf" Version="2.1.0" />
+    <PackageVersion Include="DeterministicPdf" Version="2.1.1" />
     <PackageVersion Include="Morph.PDFium" Version="1.4.0" />
     <PackageVersion Include="MarkdownSnippets.MsBuild" Version="28.5.0" />
     <PackageVersion Include="ProjectDefaults" Version="1.0.184" />
