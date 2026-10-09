@@ -44,8 +44,11 @@ Both can be opted out of per verification:
 - `ExcludeTargets("pdf")`, Verify's own setting — drops the `.verified.pdf` entirely, for producers whose bytes can never be made deterministic (Aspose.Cells embeds the machine's system fonts). `Convert` checks `context.IsTargetExcluded("pdf")` and skips the normalization with it.
 - `SkipPdfNormalization` — keeps the `.verified.pdf` but snapshots the producer's own bytes, for producers that are already byte-deterministic. A context key set by a `SettingsTask` extension and read in `Convert`. Worth knowing when changing this: `CanonicalizeXmp` is the pass that alters bytes even for such a producer, so toggling the setting on an existing suite shifts every stored `.verified.pdf` once.
 
+And one pass is opt-in:
+- `StripPdfEmbeddedFonts` (per verification, a context key) or `Initialize(stripEmbeddedFonts: true)` (every verification, a static) — passes `stripEmbeddedFonts` to `PdfNormalizer.Normalize`, which removes the embedded font programs. For producers that embed the machine's installed fonts (the Aspose libraries), where a developer machine and a build agent with different versions of one font would otherwise never agree on the `.verified.pdf`. It only touches the stored pdf: the pages and text are produced from the original bytes before `Normalize` runs. It is part of the normalization, so `SkipPdfNormalization` turns it off with the rest.
+
 Key files:
-- **VerifyPDFium.cs** — initialization, the converter, and the `SkipPdfNormalization` extension
+- **VerifyPDFium.cs** — initialization, the converter, and the `SkipPdfNormalization` and `StripPdfEmbeddedFonts` extensions
 - **PdfProperties.cs** — projects the pdfium-reported property map to the scrubbable object map
 - **PdfDate.cs** — parses PDF date strings (`D:YYYYMMDD…`) to `DateTimeOffset`
 - **PageSize.cs** — a page's width and height in points, its `Info` in the info file. The rest of that file's shape is Verify's
@@ -60,6 +63,7 @@ Style note: only public types get a namespace declaration (`VerifyTests`); inter
 - **Samples.cs** — snapshot tests, also the readme usage snippets
 - **PdfNormalizerTests.cs** — asserts the wiring rather than the algorithm: that a normalized document still loads in pdfium, that volatile values are neutralized, and that the pass is idempotent
 - **SkipPdfNormalizationTests.cs** — asserts the opposite pairing, that the skipped snapshot holds the producer's own bytes while the default one holds the neutralized bytes. `SampleIsNotAlreadyNormalized` pins the premise, so the pair cannot both pass vacuously if `sample.pdf` ever becomes normalization-invariant
+- **StripPdfEmbeddedFontsTests.cs** — the same idea for `StripPdfEmbeddedFonts`: `SampleEmbedsAFont` pins the premise, and the snapshot test shows the page image and text are unchanged while the stored pdf loses its font
 - Test assets `sample.pdf` (1 page) and `multi-page.pdf` (4 pages), both Letter size, were produced by [Morph](https://github.com/Papyrine/Morph)'s PDF exporter with embedded font subsets, so rendering is machine-independent.
 
 Engine-level unit tests (load/render/page sizes/metadata/threading) live in the Morph.PDFium repo, not here.

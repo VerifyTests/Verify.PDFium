@@ -8,12 +8,22 @@ public static class VerifyPDFium
     // produced, for producers that already emit byte-deterministic documents.
     const string skipNormalizationKey = "VerifyPDFium.SkipNormalization";
 
+    // Context key set by StripPdfEmbeddedFonts, for a single verification. The stripEmbeddedFonts
+    // argument of Initialize turns the same thing on for every one.
+    const string stripEmbeddedFontsKey = "VerifyPDFium.StripEmbeddedFonts";
+
+    static bool stripEmbeddedFonts;
+
     public static bool Initialized { get; private set; }
 
     /// <param name="dpi">
     /// Render resolution for the page images. The default 96 renders an A4 page at 794 x 1123.
     /// </param>
-    public static void Initialize(double dpi = 96)
+    /// <param name="stripEmbeddedFonts">
+    /// Removes the embedded font programs from every snapshotted pdf. See
+    /// <see cref="StripPdfEmbeddedFonts"/>, which does the same for a single verification.
+    /// </param>
+    public static void Initialize(double dpi = 96, bool stripEmbeddedFonts = false)
     {
         if (Initialized)
         {
@@ -27,6 +37,7 @@ public static class VerifyPDFium
 
         Initialized = true;
         VerifyPDFium.dpi = dpi;
+        VerifyPDFium.stripEmbeddedFonts = stripEmbeddedFonts;
 
         VerifierSettings.RegisterStreamConverter("pdf", (_, target, context) => Convert(target, context));
     }
@@ -52,6 +63,30 @@ public static class VerifyPDFium
     public static SettingsTask SkipPdfNormalization(this SettingsTask settings)
     {
         settings.CurrentSettings.Context[skipNormalizationKey] = true;
+        return settings;
+    }
+
+    /// <summary>
+    /// Removes the embedded font programs from the snapshotted pdf, leaving each font named but not
+    /// embedded. Use it when the producer embeds the machine's installed fonts, so that the same
+    /// document renders to different pdf bytes on a machine with a different version of a font.
+    /// </summary>
+    /// <remarks>
+    /// Only the <c>.verified.pdf</c> is affected. The pages are rendered, and the text read, from the
+    /// document as it was produced, with its fonts.
+    /// <para>
+    /// The stored pdf is no longer a faithful copy: a viewer opening it substitutes fonts of its own.
+    /// Turning this on for an existing suite changes every stored <c>.verified.pdf</c> that embeds a
+    /// font, so expect to re-accept those once.
+    /// </para>
+    /// <para>
+    /// It is part of the normalization, so it does nothing alongside
+    /// <see cref="SkipPdfNormalization"/>.
+    /// </para>
+    /// </remarks>
+    public static SettingsTask StripPdfEmbeddedFonts(this SettingsTask settings)
+    {
+        settings.CurrentSettings.Context[stripEmbeddedFontsKey] = true;
         return settings;
     }
 
@@ -105,7 +140,7 @@ public static class VerifyPDFium
             {
                 // Neutralize the volatile fields for the pdf snapshot only once the document, which
                 // reads lazily from the same buffer, has been released.
-                bytes = PdfNormalizer.Normalize(bytes);
+                bytes = PdfNormalizer.Normalize(bytes, StripEmbeddedFonts(context));
             }
 
             conversion.Source(new("pdf", new MemoryStream(bytes)));
@@ -117,4 +152,9 @@ public static class VerifyPDFium
     static bool Normalize(IReadOnlyDictionary<string, object> context) =>
         !context.TryGetValue(skipNormalizationKey, out var value) ||
         value is not true;
+
+    static bool StripEmbeddedFonts(IReadOnlyDictionary<string, object> context) =>
+        stripEmbeddedFonts ||
+        context.TryGetValue(stripEmbeddedFontsKey, out var value) &&
+        value is true;
 }
