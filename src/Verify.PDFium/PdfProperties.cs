@@ -16,6 +16,11 @@ static class PdfProperties
         var result = new Dictionary<string, object>(properties.Count);
         foreach (var (key, value) in properties)
         {
+            if (key == "Producer")
+            {
+                continue;
+            }
+
             if (key is "CreationDate" or "ModDate" &&
                 PdfDate.TryParse(value, out var date))
             {
