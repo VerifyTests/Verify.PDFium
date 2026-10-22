@@ -104,27 +104,39 @@ public static class VerifyPDFium
         using (var document = PdfiumDocument.Load(bytes))
         {
             conversion.Info = PdfProperties.Normalize(document.GetProperties());
-            foreach (var number in conversion.Pages(document.PageCount))
+            // The pages are rendered and read in parallel: PDFium works on one at a time, but each
+            // page's PNG encoding overlaps the others' work. The results come back in page order, so
+            // they are added to the conversion in order from this thread.
+            var indices = conversion.Pages(document.PageCount).Select(_ => _ - 1);
+            var pages = document.ProcessPages(
+                indices,
+                _ =>
+                {
+                    byte[]? image = null;
+                    if (includeImages)
+                    {
+                        image = _.Render(dpi);
+                    }
+
+                    string? text = null;
+                    if (includeText)
+                    {
+                        text = _.GetText();
+                    }
+
+                    return (Number: _.Index + 1, _.Size, Image: image, Text: text);
+                });
+            foreach (var (number, size, image, text) in pages)
             {
-                var index = number - 1;
-                using var page = document.LoadPage(index);
-                var size = page.Size;
-
-                Stream? image = null;
-                if (includeImages)
+                Stream? imageStream = null;
+                if (image != null)
                 {
-                    image = new MemoryStream(document.RenderPage(index, dpi));
-                }
-
-                string? text = null;
-                if (includeText)
-                {
-                    text = page.GetText();
+                    imageStream = new MemoryStream(image);
                 }
 
                 conversion.AddPage(
                     number,
-                    image,
+                    imageStream,
                     text,
                     new PageSize
                     {
